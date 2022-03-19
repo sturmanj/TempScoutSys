@@ -1,0 +1,22 @@
+{
+  "name": "tempscoutsystem",
+  "version": "1.0.0",
+  "description": "1540's temporary system for managing scouting",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "author": "Jack Sturman",
+  "license": "ISC",
+  "dependencies": {
+    "@slack/bolt": "^3.10.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "googleapis": "^97.0.0",
+    "jsonpath": "^1.1.1",
+    "node-fetch": "^3.2.3",
+    "nodemon": "^2.0.15",
+    "socket.io": "^4.4.1",
+    "twilio": "^3.75.1"
+  }
+}
