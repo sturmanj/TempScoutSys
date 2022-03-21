@@ -10,7 +10,7 @@ const twilioClient = require("twilio")(accountSid, authToken)
 const { App } = require("@slack/bolt")
 const { google } = require("googleapis")
 
-let client, googleSheets, spreadsheetId, timeToMatch
+let client, googleSheets, spreadsheetId, timeToTeams
 
 //Initialize SocketIO, Slack, Google Sheets, and Twilio
 const server = http.createServer(express())
@@ -60,21 +60,12 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 })
 	.then((response) => response.json())
 	.then((data) => {
-		matchNums = jp.query(data, "$.*.match_number")
-		teams = jp.query(data, "$.*.*.*.team_keys")
-		matchToTeams = new Map()
-		for (let i = 0; i < matchNums.length; i++) {
-			matchToTeams.set(
-				matchNums[i],
-				teams[2 * i].concat(teams[2 * i + 1])
-			)
-		}
-		matchNums = jp.query(data, "$.*.match_number")
 		times = jp.query(data, "$.*.predicted_time")
 		times = times.map((time) => roundTime(time * 1000) / 1000)
-		timeToMatch = new Map()
-		for (let i = 0; i < matchNums.length; i++) {
-			timeToMatch.set(times[i], matchNums[i])
+		teams = jp.query(data, "$.*.*.*.team_keys")
+		timeToTeams = new Map()
+		for (let i = 0; i < times.length; i++) {
+			timeToTeams.set(times[i], teams[2 * i].concat(teams[2 * i + 1]))
 		}
 	})
 	.catch((err) => {
@@ -83,18 +74,12 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 
 //for testing:
 // const data = require("./testRes.json")
-// matchNums = jp.query(data, "$.*.match_number")
-// teams = jp.query(data, "$.*.*.*.team_keys")
-// matchToTeams = new Map()
-// for (let i = 0; i < matchNums.length; i++) {
-// 	matchToTeams.set(matchNums[i], teams[2 * i].concat(teams[2 * i + 1]))
-// }
-// matchNums = jp.query(data, "$.*.match_number")
 // times = jp.query(data, "$.*.predicted_time")
-// times = times.map(time => roundTime(time * 1000) / 1000)
-// timeToMatch = new Map()
-// for (let i = 0; i < matchNums.length; i++) {
-// 	timeToMatch.set(times[i], matchNums[i])
+// times = times.map((time) => roundTime(time * 1000) / 1000)
+// teams = jp.query(data, "$.*.*.*.team_keys")
+// timeToTeams = new Map()
+// for (let i = 0; i < times.length; i++) {
+// 	timeToTeams.set(times[i], teams[2 * i].concat(teams[2 * i + 1]))
 // }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
