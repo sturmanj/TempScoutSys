@@ -61,7 +61,7 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 	.then((response) => response.json())
 	.then((data) => {
 		times = jp.query(data, "$.*.predicted_time")
-		times = times.map((time) => roundTime(time * 1000) / 1000)
+		times = times.map((time) => roundTime(time * 1000))
 		teams = jp.query(data, "$.*.*.*.team_keys")
 		timeToTeams = new Map()
 		for (let i = 0; i < times.length; i++) {
@@ -75,18 +75,29 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 //for testing:
 // const data = require("./testRes.json")
 // times = jp.query(data, "$.*.predicted_time")
-// times = times.map((time) => roundTime(time * 1000) / 1000)
+// times = times.map((time) => roundTime(time * 1000))
 // teams = jp.query(data, "$.*.*.*.team_keys")
 // timeToTeams = new Map()
 // for (let i = 0; i < times.length; i++) {
 // 	timeToTeams.set(times[i], teams[2 * i].concat(teams[2 * i + 1]))
 // }
 
+
+//Check if the current time is time to alert for a match.
+setInterval(function(){
+	currentTime = roundTime(new Date().getTime()) + 120
+	console.log(currentTime)
+	if (timeToTeams.has(currentTime)) {
+		console.log(timeToTeams.get(currentTime))
+		timeToTeams.delete(currentTime)
+	}
+}, 30000);
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Helpful functions
 function roundTime(timestamp) {
-	return Math.floor(new Date(timestamp / 60000) * 60000)
+	return Math.floor(new Date(timestamp / 60000) * 60000) / 1000
 }
 
 async function getTeamPriority() {
