@@ -86,7 +86,6 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 //Check if the current time is time to alert for a match.
 setInterval(function(){
 	currentTime = roundTime(new Date().getTime()) + 120
-	console.log(currentTime)
 	if (timeToTeams.has(currentTime)) {
 		console.log(timeToTeams.get(currentTime))
 		timeToTeams.delete(currentTime)
@@ -101,12 +100,17 @@ function roundTime(timestamp) {
 }
 
 async function getTeamPriority() {
+	try {
 	const data = await googleSheets.spreadsheets.values.batchGet({
 		auth: auth,
 		spreadsheetId: spreadsheetId,
 		majorDimension: "COLUMNS",
 		ranges: process.env.SHEET_SCOUT_RANGE,
 	})
+	}
+	catch (err) {
+		console.log("Failed to get Team Priority List")
+	}
 
 	return data.data.valueRanges[0].values[0]
 }
@@ -119,13 +123,18 @@ async function textMessage(number, message) {
 			body: message,
 		})
 		.then((message) => console.log(message))
-		.catch((err) => console.log(err))
+		.catch((err) => console.log(`Failed to send text "${message}" to "${number}"`))
 }
 
-async function slackMessage(channel, text) {
+async function slackMessage(channel, message) {
+	try {
 	slackApp.client.chat.postMessage({
 		token: process.env.SLACK_BOT_TOKEN,
 		channel: channel,
-		text: text,
+		text: message,
 	})
+	}
+	catch (err) {
+		console.log(`Failed to send Slack message "${message}" to ${channel}`)
+	}
 }
