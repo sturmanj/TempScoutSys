@@ -1,0 +1,15 @@
+#clock-in {
+	display: block;
+	height: 20rem;
+	width: 20rem;
+	border-radius: 50%;
+	border: 10px solid
+}
+
+.join {
+    background-color: hsl(115, 87%, 55%)
+}
+
+.leave {
+    background-color: hsl(0, 87%, 55%)
+}

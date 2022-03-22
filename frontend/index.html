@@ -5,6 +5,11 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<script src="./app.js" defer></script>
+        <link rel="stylesheet" type="text/css" href="./style.css">
+		<link rel="manifest" href="./manifest.json">
+		<meta name="theme-color" content="#f59032"/>
+		<link rel="apple-touch-icon" href="./icons/icon-96x96.png">
+		<meta name="apple-mobile-web-app-status-bar" content="#f59032">
 		<title>Scout Queue</title>
 	</head>
 	<body>
@@ -12,26 +17,27 @@
 
 		<div id="credentials">
 			<label
-				>First Name:
-				<input type="text" name="first_name" />
+				>Full Name:
+				<input type="text" name="first_name" placeholder="First Last"/>
 			</label>
             <br>
 			<label
-				>Last Name:
-				<input type="text" name="last_name" />
+				>Password:
+				<input type="text" name="last_name" placeholder="p@55w0rd"/>
 			</label>
             <br>
 			<label
 				>Phone Number:
-				<input type="text" name="phone_number" />
+				<input type="text" name="phone_number" placeholder="xxx xxx xxxx"/>
 			</label>
             <br>
             <button id="saveCredentials">Save Credentials</button>
 		</div>
 
-		<button id="clock-in">Join Queue</button>
+		<h3 id="queuedScouts">Queued Scouts: 3/8</H3>
+		<button id="clock-in" class="join">Join Queue</button>
 
 		<h2>Top Scouts:</h2>
-		<ul></ul>
+		<ul id="leaderboard"></ul>
 	</body>
 </html>
