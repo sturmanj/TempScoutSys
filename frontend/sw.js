@@ -1,10 +1,19 @@
+let statics = [
+  './',
+  './index.html',
+  './offline.html',
+  './app.js',
+  './style.css',
+  './sw.js',
+  './manifest.json',
+]
+
 self.addEventListener('install', (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open("offline");
-    await cache.add(new Request("./offline.html", {cache: 'reload'}));
-  })());
+  event.waitUntil(
+    caches.open("statics").then((cache) => {cache.addAll(statics)}),
+  )
   console.log("installed")
-  //self.skipWaiting();
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -14,26 +23,12 @@ self.addEventListener('activate', (event) => {
     }
   })());
   console.log("activated")
-  //self.clients.claim();
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const preloadResponse = await event.preloadResponse;
-        if (preloadResponse) {
-          return preloadResponse;
-        }
-        const networkResponse = await fetch(event.request);
-        return networkResponse;
-      } catch (error) {
-        console.log('Fetch failed; returning offline page instead.', error);
-
-        const cache = await caches.open("offline");
-        const cachedResponse = await cache.match("./offline.html");
-        return cachedResponse;
-      }
-    })());
-  }
+  console.log(event.request.url);
+  event.respondWith(
+    caches.match(event.request).then((response) => response || fetch(event.request)).catch((error) => {}),
+  );
 });
