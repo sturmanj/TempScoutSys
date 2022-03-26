@@ -1,7 +1,6 @@
 let statics = [
   './',
   './index.html',
-  './offline.html',
   './app.js',
   './style.css',
   './sw.js',

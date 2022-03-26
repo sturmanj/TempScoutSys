@@ -5,7 +5,7 @@ if ("serviceWorker" in navigator) {
 		.catch((err) => console.log("service worker not registered", err))
 }
 
-var button = document.getElementById("clock-in")
+var button = document.getElementById("clock-in-out")
 
 button.onclick = () => {
 	if (button.classList.contains("join")) {

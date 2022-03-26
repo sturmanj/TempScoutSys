@@ -51,7 +51,7 @@ const auth = new google.auth.GoogleAuth({
 // 	})
 // })
 
-fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
+fetch("https://www.thebluealliance.com/api/v3/event/2022wimi/matches/simple", {
 	method: "GET",
 	headers: {
 		"X-TBA-Auth-Key":
@@ -63,9 +63,19 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 		times = jp.query(data, "$.*.predicted_time")
 		times = times.map((time) => roundTime(time * 1000))
 		teams = jp.query(data, "$.*.*.*.team_keys")
+		teams.forEach(function(teamGroup) {
+			teamGroup.forEach(function(team, index) {
+				teamGroup[index] = teamGroup[index].split("frc")[1]
+			})
+		})
+		matchNums = jp.query(data, "$.*.match_number")
 		timeToTeams = new Map()
 		for (let i = 0; i < times.length; i++) {
 			timeToTeams.set(times[i], teams[2 * i].concat(teams[2 * i + 1]))
+		}
+		timeToMatch = new Map()
+		for (let i = 0; i < matchNums.length; i++) {
+			timeToMatch.set(times[i], matchNums[i])
 		}
 	})
 	.catch((err) => {
@@ -87,10 +97,10 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022miliv/matches/simple", {
 setInterval(function(){
 	currentTime = roundTime(new Date().getTime()) + 120
 	if (timeToTeams.has(currentTime)) {
-		console.log(timeToTeams.get(currentTime))
+		console.log(timeToTeams.get(currentTime) + "   " + timeToMatch.get(currentTime))
 		timeToTeams.delete(currentTime)
 	}
-}, 30000);
+}, 60000);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -100,19 +110,27 @@ function roundTime(timestamp) {
 }
 
 async function getTeamPriority() {
+	let data
 	try {
-	const data = await googleSheets.spreadsheets.values.batchGet({
+		data = await googleSheets.spreadsheets.values.batchGet({
 		auth: auth,
 		spreadsheetId: spreadsheetId,
 		majorDimension: "COLUMNS",
-		ranges: process.env.SHEET_SCOUT_RANGE,
+		ranges: process.env.SHEET_PRIORITY_RANGE,
 	})
 	}
 	catch (err) {
 		console.log("Failed to get Team Priority List")
 	}
 
-	return data.data.valueRanges[0].values[0]
+	teamPriorityList = []
+
+	data.data.valueRanges[0].values[0].forEach(function (entry) {
+		entry = entry.split("  ")
+		teamPriorityList.push(entry[0])
+	})
+
+	return teamPriorityList
 }
 
 async function textMessage(number, message) {
