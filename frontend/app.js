@@ -5,18 +5,20 @@ if ("serviceWorker" in navigator) {
 		.catch((err) => console.log("service worker not registered", err))
 }
 
-var button = document.getElementById("clock-in-out")
+var clockInOut = document.getElementById("clock-in-out")
+var verify = document.getElementById("verify")
 
-button.onclick = () => {
-	if (button.classList.contains("join")) {
-		button.classList.remove("join")
-		button.classList.add("leave")
-		button.innerText = "Leave Queue"
+clockInOut.onclick = () => {
+	console.log("clicked")
+	if (clockInOut.classList.contains("join")) {
+		clockInOut.classList.remove("join")
+		clockInOut.classList.add("leave")
+		clockInOut.innerText = "Leave Queue"
 	} else {
 		if (confirm("Are you sure you want to leave?")) {
-			button.classList.remove("leave")
-			button.classList.add("join")
-			button.innerText = "Join Queue"
+			clockInOut.classList.remove("leave")
+			clockInOut.classList.add("join")
+			clockInOut.innerText = "Join Queue"
 		}
 	}
 }

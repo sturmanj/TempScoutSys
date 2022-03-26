@@ -26,7 +26,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  console.log(event.request.url);
   event.respondWith(
     caches.match(event.request).then((response) => response || fetch(event.request)).catch((error) => {}),
   );
