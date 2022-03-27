@@ -6,19 +6,84 @@ if ("serviceWorker" in navigator) {
 }
 
 var clockInOut = document.getElementById("clock-in-out")
-var verify = document.getElementById("verify")
+var id = document.getElementById("id")
 
 clockInOut.onclick = () => {
-	console.log("clicked")
 	if (clockInOut.classList.contains("join")) {
-		clockInOut.classList.remove("join")
-		clockInOut.classList.add("leave")
-		clockInOut.innerText = "Leave Queue"
+		clockInOut.disabled = true
+		;(async () => {
+			var verified = await verify()
+			if (verified.success) {
+				var left = await join()
+				if (left.success) {
+					clockInOut.classList.remove("join")
+					clockInOut.classList.add("leave")
+					clockInOut.innerText = "Leave Queue"
+					clockInOut.disabled = false
+				} else {
+					alert("Failed to leave queue")
+				}
+			} else {
+				alert("Invalid Phone Number")
+			}
+			clockInOut.disabled = false
+		})()
 	} else {
 		if (confirm("Are you sure you want to leave?")) {
-			clockInOut.classList.remove("leave")
-			clockInOut.classList.add("join")
-			clockInOut.innerText = "Join Queue"
+			clockInOut.disabled = true
+			;(async () => {
+				var verified = await verify()
+				if (verified.success) {
+					var left = await leave()
+					if (left.success) {
+						clockInOut.classList.remove("leave")
+						clockInOut.classList.add("join")
+						clockInOut.innerText = "Join Queue"
+						clockInOut.disabled = false
+					} else {
+						alert("Failed to leave queue")
+					}
+				} else {
+					alert("Invalid Phone Number")
+				}
+				clockInOut.disabled = false
+			})()
 		}
 	}
+}
+
+async function verify() {
+	const response = await fetch("http://127.0.0.1:3000/verify", {
+		mode: "cors",
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ id: parseInt(id.value) }),
+	})
+	return await response.json()
+}
+
+async function join() {
+	const response = await fetch("http://127.0.0.1:3000/join", {
+		mode: "cors",
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ id: parseInt(id.value) }),
+	})
+	return await response.json()
+}
+
+async function leave() {
+	const response = await fetch("http://127.0.0.1:3000/leave", {
+		mode: "cors",
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ id: parseInt(id.value) }),
+	})
+	return await response.json()
 }

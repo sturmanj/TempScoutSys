@@ -1,8 +1,8 @@
 require("dotenv").config()
 const fetch = require("node-fetch")
 var express = require("express")
-const bodyParser = require('body-parser');
-const cors = require('cors');
+const bodyParser = require("body-parser")
+const cors = require("cors")
 const jp = require("JSONpath")
 const accountSid = process.env.TWILIO_ACCOUNT_SID
 const authToken = process.env.TWILIO_AUTH_TOKEN
@@ -14,8 +14,8 @@ let client, googleSheets, spreadsheetId, timeToTeams
 
 //Initialize SocketIO, Slack, Google Sheets, and Twilio
 const app = express()
-app.use(bodyParser.json());
-app.use(cors());
+app.use(bodyParser.json())
+app.use(cors("*"))
 
 app.listen(process.env.API_PORT, () => {
 	console.log(`API Server started on port ${process.env.API_PORT}`)
@@ -55,8 +55,8 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022wimi/matches/simple", {
 		times = jp.query(data, "$.*.predicted_time")
 		times = times.map((time) => roundTime(time * 1000))
 		teams = jp.query(data, "$.*.*.*.team_keys")
-		teams.forEach(function(teamGroup) {
-			teamGroup.forEach(function(team, index) {
+		teams.forEach(function (teamGroup) {
+			teamGroup.forEach(function (team, index) {
 				teamGroup[index] = teamGroup[index].split("frc")[1]
 			})
 		})
@@ -74,33 +74,93 @@ fetch("https://www.thebluealliance.com/api/v3/event/2022wimi/matches/simple", {
 		console.error(err)
 	})
 
-app.get('/join', (req, res) => {
-	let ids
-	(async () => {
-		ids = await getActiveScoutIds()
-		ids = ids.activeIds
-		ids.push(req.body.id)
-		insertData(process.env.SHEET_SCOUT_RANGE, `{ "activeIds": [${ids}] }`)
-		res.json({success: true})
+app.post("/join", (req, res) => {
+	;(async () => {
+		try {
+			let data
+			data = await googleSheets.spreadsheets.values.batchGet({
+				auth: auth,
+				spreadsheetId: spreadsheetId,
+				majorDimension: "COLUMNS",
+				ranges: process.env.SHEET_SCOUT_RANGE,
+			})
+			ids = JSON.parse(data.data.valueRanges[0].values[0]).activeIds
+			ids.push(req.body.id)
+			await googleSheets.spreadsheets.values.update({
+				auth,
+				spreadsheetId,
+				range: process.env.SHEET_SCOUT_RANGE,
+				valueInputOption: "USER_ENTERED",
+				resource: {
+					values: [[`{ "activeIds": [${ids}] }`]],
+				},
+			})
+		} catch (err) {
+			console.log(`Failed to add scout ${req.body.id} to the active list`)
+			res.json({ success: false })
+			return
+		}
+		res.json({ success: true })
 	})()
 })
 
-app.get('/leave', (req, res) => {
-	let ids
-	(async () => {
-		ids = await getActiveScoutIds()
-		ids = ids.activeIds
-		ids.splice(ids.indexOf(ids), 1)
-		insertData(process.env.SHEET_SCOUT_RANGE, `{ "activeIds": [${ids}] }`)
-		res.json({success: true})
+app.post("/leave", (req, res) => {
+	;(async () => {
+		try {
+			let data
+			data = await googleSheets.spreadsheets.values.batchGet({
+				auth: auth,
+				spreadsheetId: spreadsheetId,
+				majorDimension: "COLUMNS",
+				ranges: process.env.SHEET_SCOUT_RANGE,
+			})
+			ids = JSON.parse(data.data.valueRanges[0].values[0]).activeIds
+			if (!(ids.includes(req.body.id))) {
+				res.json({ success: false })
+				return
+			}
+			ids.splice(ids.indexOf(req.body.id), 1)
+			await googleSheets.spreadsheets.values.update({
+				auth,
+				spreadsheetId,
+				range: process.env.SHEET_SCOUT_RANGE,
+				valueInputOption: "USER_ENTERED",
+				resource: {
+					values: [[`{ "activeIds": [${ids}] }`]],
+				},
+			})
+		} catch (err) {
+			console.log(
+				`Failed to remove scout ${req.body.id} from active list`
+			)
+			res.json({ success: false })
+			return
+		}
+		res.json({ success: true })
 	})()
 })
 
-app.get('/verify', (req, res) => {
-	let ids
-	(async () => {
-		ids = await getValidScoutIds()
-		res.json({success: ids.validIds.includes(req.body.id)})
+app.post("/verify", (req, res) => {
+	;(async () => {
+		try {
+			let data
+			data = await googleSheets.spreadsheets.values.batchGet({
+				auth: auth,
+				spreadsheetId: spreadsheetId,
+				majorDimension: "COLUMNS",
+				ranges: process.env.SHEET_VALIDID_RANGE,
+			})
+			success = JSON.parse(
+				data.data.valueRanges[0].values
+			).validIds.includes(req.body.id)
+		} catch (err) {
+			console.log(`Failed to get valid scout Id ${req.body.id}`)
+			res.json({ success: false })
+			return
+		}
+		res.json({
+			success: success,
+		})
 	})()
 })
 
@@ -114,15 +174,16 @@ app.get('/verify', (req, res) => {
 // 	timeToTeams.set(times[i], teams[2 * i].concat(teams[2 * i + 1]))
 // }
 
-
 //Check if the current time is time to alert for a match.
-setInterval(function(){
+setInterval(function () {
 	currentTime = roundTime(new Date().getTime()) + 120
 	if (timeToTeams.has(currentTime)) {
-		console.log(timeToTeams.get(currentTime) + "   " + timeToMatch.get(currentTime))
+		console.log(
+			timeToTeams.get(currentTime) + "   " + timeToMatch.get(currentTime)
+		)
 		timeToTeams.delete(currentTime)
 	}
-}, 60000);
+}, 60000)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -135,13 +196,12 @@ async function getTeamPriority() {
 	let data
 	try {
 		data = await googleSheets.spreadsheets.values.batchGet({
-		auth: auth,
-		spreadsheetId: spreadsheetId,
-		majorDimension: "COLUMNS",
-		ranges: process.env.SHEET_PRIORITY_RANGE,
-	})
-	}
-	catch (err) {
+			auth: auth,
+			spreadsheetId: spreadsheetId,
+			majorDimension: "COLUMNS",
+			ranges: process.env.SHEET_PRIORITY_RANGE,
+		})
+	} catch (err) {
 		console.log("Failed to get Team Priority List")
 	}
 
@@ -163,66 +223,19 @@ async function textMessage(number, message) {
 			body: message,
 		})
 		.then((message) => console.log(message))
-		.catch((err) => console.log(`Failed to send text "${message}" to "${number}"`))
+		.catch((err) =>
+			console.log(`Failed to send text "${message}" to "${number}"`)
+		)
 }
 
 async function slackMessage(channel, message) {
 	try {
-	slackApp.client.chat.postMessage({
-		token: process.env.SLACK_BOT_TOKEN,
-		channel: channel,
-		text: message,
-	})
-	}
-	catch (err) {
+		slackApp.client.chat.postMessage({
+			token: process.env.SLACK_BOT_TOKEN,
+			channel: channel,
+			text: message,
+		})
+	} catch (err) {
 		console.log(`Failed to send Slack message "${message}" to ${channel}`)
 	}
-}
-
-async function getValidScoutIds() {
-	let data
-	try {
-		data = await googleSheets.spreadsheets.values.batchGet({
-		auth: auth,
-		spreadsheetId: spreadsheetId,
-		majorDimension: "COLUMNS",
-		ranges: process.env.SHEET_VALIDID_RANGE,
-	})
-	}
-	catch (err) {
-		console.log("Failed to get valid scout Ids")
-	}
-
-	return JSON.parse(data.data.valueRanges[0].values[0])
-}
-
-async function getActiveScoutIds() {
-	let data
-	try {
-		data = await googleSheets.spreadsheets.values.batchGet({
-		auth: auth,
-		spreadsheetId: spreadsheetId,
-		majorDimension: "COLUMNS",
-		ranges: process.env.SHEET_SCOUT_RANGE,
-	})
-	}
-	catch (err) {
-		console.log("Failed to get active scout Ids")
-	}
-
-	return JSON.parse(data.data.valueRanges[0].values[0])
-}
-
-async function insertData(cell, text) {
-    const client = await auth.getClient()
-    const googleSheets = google.sheets({ version: "v4", auth: client })
-    await googleSheets.spreadsheets.values.update({
-        auth,
-        spreadsheetId,
-        range: cell,
-        valueInputOption: 'USER_ENTERED',
-        resource: {
-            values: [[text]]
-        },
-    })
 }
