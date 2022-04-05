@@ -3,7 +3,7 @@ const fetch = require("node-fetch")
 var express = require("express")
 const bodyParser = require("body-parser")
 const cors = require("cors")
-const jp = require("JSONpath")
+const jp = require("jsonpath")
 const accountSid = process.env.TWILIO_ACCOUNT_SID
 const authToken = process.env.TWILIO_AUTH_TOKEN
 const twilioClient = require("twilio")(accountSid, authToken)
@@ -43,7 +43,7 @@ const auth = new google.auth.GoogleAuth({
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 var timeToMatch
 
-fetch("https://www.thebluealliance.com/api/v3/event/2022wimi/matches/simple", {
+fetch("https://www.thebluealliance.com/api/v3/event/2022pncmp/matches/simple", {
 	method: "GET",
 	headers: {
 		"X-TBA-Auth-Key":
@@ -202,7 +202,6 @@ setInterval(function () {
 	currentTime = roundTime(new Date().getTime()) + 120
 	if (timeToTeams.has(currentTime)) {
 		;(async () => {
-			await new Promise((resolve) => setTimeout(resolve, 5000))
 			try {
 				const matchNum = timeToMatch.get(currentTime)
 				const matchTeams = timeToTeams.get(currentTime)
@@ -233,49 +232,51 @@ setInterval(function () {
 				teamPriorityList.forEach((team) => {
 					if (matchTeams.includes(team)) {
 						if (activeScouts.length > 0) {
-							// twilioClient.messages.create({
-							// 	to: "+1" + activeScouts[0],
-							// 	from: process.env.TWILIO_NUMBER,
-							// 	body: `For match ${matchNum}, you will be scouting team ${team}`,
-							// })
-							console.log(
-								activeScouts[0],
-								`For match ${matchNum}, you will be scouting team ${team}`
-							)
+							twilioClient.messages.create({
+								to: "+1" + activeScouts[0],
+								from: process.env.TWILIO_NUMBER,
+								body: `For match ${matchNum}, you will be scouting team ${team}`,
+							})
+							// console.log(
+							// 	activeScouts[0],
+							// 	`For match ${matchNum}, you will be scouting team ${team}`
+							// )
 							activeScouts.shift()
 						}
 					}
 				})
-				timeToTeams.delete(currentTime)
+
+				while (activeScouts.length > 0) {
+					twilioClient.messages.create({
+						to: "+1" + activeScouts[0],
+						from: process.env.TWILIO_NUMBER,
+						body: `For match ${matchNum}, you can take a break!`,
+					})
+					// console.log(
+					// 	activeScouts[0],
+					// 	`For match ${matchNum}, you can take a break!`
+					// )
+					activeScouts.shift()
+				}
+
 			} catch (err) {
 				console.log(`Failed to send match notifications`)
 				slackMessage(
 					"U01AEHK9K6Y",
 					"Failed to send match notifications"
 				)
+				timeToTeams.set(currentTime, matchTeams)
 			}
 		})()
+		timeToTeams.delete(currentTime)
 	}
-}, 60000)
+}, 30000)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Helpful functions
 function roundTime(timestamp) {
 	return Math.floor(new Date(timestamp / 60000) * 60000) / 1000
-}
-
-async function textMessage(number, message) {
-	twilioClient.messages
-		.create({
-			to: "+1" + number,
-			from: process.env.TWILIO_NUMBER,
-			body: message,
-		})
-		.then((message) => console.log(message))
-		.catch((err) =>
-			console.log(`Failed to send text "${message}" to "${number}"`)
-		)
 }
 
 async function slackMessage(channel, message) {
