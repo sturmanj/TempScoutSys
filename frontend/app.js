@@ -53,7 +53,7 @@ clockInOut.onclick = () => {
 }
 
 async function verify() {
-	const response = await fetch("http://127.0.0.1:3000/verify", {
+	const response = await fetch("https://scouting.ing.fmt2.as34553.net/verify", {
 		mode: "cors",
 		method: "POST",
 		headers: {
@@ -65,7 +65,7 @@ async function verify() {
 }
 
 async function join() {
-	const response = await fetch("http://127.0.0.1:3000/join", {
+	const response = await fetch("https://scouting.ing.fmt2.as34553.net/join", {
 		mode: "cors",
 		method: "POST",
 		headers: {
@@ -77,7 +77,7 @@ async function join() {
 }
 
 async function leave() {
-	const response = await fetch("http://127.0.0.1:3000/leave", {
+	const response = await fetch("https://scouting.ing.fmt2.as34553.net/leave", {
 		mode: "cors",
 		method: "POST",
 		headers: {
